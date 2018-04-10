@@ -9,6 +9,13 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Config {
     private Common common = new Common();
@@ -33,37 +40,49 @@ public class Config {
      *
      * @return singleton instance
      */
+
     public static Config obj() {
         final Logger logger = LoggerFactory.getLogger("EAT.Config");
         if (instance == null) {
-
-            Gson gson = new Gson();
-            InputStream inputStream = null;
-            if (configFilePath != null) {
-                try {
-                    logger.info("rootPath => {}", configFilePath);
-                    inputStream = new FileInputStream(configFilePath);
-                } catch (FileNotFoundException e) {
-                    logger.error(ExceptionUtils.getStackTrace(e));
-                }
-            } else {
-                inputStream = Config.class.getClassLoader().getResourceAsStream("config.json");
-            }
-
-            StringBuffer sb = new StringBuffer();
-            byte[] b = new byte[4096];
             try {
-                for (int n; (n = inputStream.read(b)) != -1; ) {
-                    sb.append(new String(b, 0, n));
-                }
+                System.out.println(loadConfiguration(configFilePath));
+                instance = new Gson().fromJson(loadConfiguration(configFilePath), Config.class);
             } catch (IOException e) {
                 logger.error(ExceptionUtils.getStackTrace(e));
             }
-            String configJson = sb.toString();
-
-            instance = gson.fromJson(configJson, Config.class);
         }
         return instance;
+    }
+
+    public static String loadConfiguration(String configResourcePath) throws IOException {
+        Path configPath = findConfigResourcePath(configResourcePath);
+        return Optional.ofNullable(configPath)
+            .map(path -> readLinesFrom(path).collect(Collectors.joining(System.lineSeparator()))
+            ).orElseThrow( () -> new RuntimeException("Failed to load config resource" + configResourcePath));
+    }
+
+    private static Stream<String> readLinesFrom(Path path) {
+        try {
+            return Files.lines(path);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to read config resource", e);
+        }
+    }
+
+    private static Path findConfigResourcePath(String configResourcePath) {
+        final Logger logger = LoggerFactory.getLogger("EAT.Config");
+        Path configPath = Paths.get(configResourcePath);
+
+        if (Files.exists(configPath) && Files.isReadable(configPath)) {
+            return configPath;
+        } else {
+            logger.warn("Config file not exist or not readable => {}, so try to find config resource under classpath", configFilePath);
+            try {
+                return Paths.get(Config.class.getClassLoader().getResource("config.json").toURI());
+            } catch (URISyntaxException e) {
+                return null;
+            }
+        }
     }
 
     public static <T> T obj(Class<T> configClass, Object instancePara) {
