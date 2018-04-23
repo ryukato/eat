@@ -43,4 +43,14 @@ public class JMXConfig {
         this.mBeanFilePath = value;
     }
 
+    @Override
+    public String toString() {
+        return "JMXConfig{" +
+            "mBeanFilePath='" + mBeanFilePath + '\'' +
+            ", mBeanName='" + mBeanName + '\'' +
+            ", endPointName='" + endPointName + '\'' +
+            ", ipAddress='" + ipAddress + '\'' +
+            ", port=" + port +
+            '}';
+    }
 }

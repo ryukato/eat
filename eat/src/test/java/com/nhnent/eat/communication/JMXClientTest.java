@@ -1,5 +1,6 @@
 package com.nhnent.eat.communication;
 
+import com.nhnent.eat.common.Config.Config;
 import com.nhnent.eat.communication.jmx.JMXClient;
 import org.junit.Test;
 
@@ -9,7 +10,8 @@ import org.junit.Test;
 public class JMXClientTest {
     @Test
     public void connect() throws Exception {
-        JMXClient jmxClient = new JMXClient();
+        Config config = Config.builder().create();
+        JMXClient jmxClient = new JMXClient(config);
         jmxClient.disconnect();
     }
 

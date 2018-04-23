@@ -3,6 +3,7 @@ package com.nhnent.eat.communication.communicator;
 import co.paralleluniverse.fibers.SuspendExecution;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import com.nhnent.eat.common.Config.Config;
 import com.nhnent.eat.communication.jmx.CommonJMXClient;
 import com.nhnent.eat.entity.ScenarioUnit;
 import com.nhnent.eat.entity.ScenarioUnitType;
@@ -22,9 +23,11 @@ public class JmxCommunication implements IBaseCommunication {
     private final Stack<Object> jmxResponseStack;
     private final PacketJsonHandler packetJsonHandler;
 
-    public JmxCommunication() {
+    private Config config;
+    public JmxCommunication(Config config) {
+        this.config = config;
         jmxResponseStack = new Stack<>();
-        packetJsonHandler = new PacketJsonHandler();
+        packetJsonHandler = new PacketJsonHandler(config);
     }
 
     @Override

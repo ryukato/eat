@@ -104,4 +104,16 @@ public class Server {
     public void setSsl(Ssl ssl) {
         this.ssl = ssl;
     }
+
+    @Override
+    public String toString() {
+        return "Server{" +
+            "socketType='" + socketType + '\'' +
+            ", ip='" + ip + '\'' +
+            ", port=" + port +
+            ", countOfPort=" + countOfPort +
+            ", subUriOfWS='" + subUriOfWS + '\'' +
+            ", ssl=" + ssl +
+            '}';
+    }
 }

@@ -24,29 +24,37 @@ import static com.nhnent.eat.Main.userInfo;
  */
 public class NettyCommunication implements IBaseCommunication {
 
-    private NettyClient nettyClient = null;
-    private PacketReceiver packetReceiver = null;
-    private final PacketJsonHandler packetJsonHandler = new PacketJsonHandler();
+    private NettyClient nettyClient;
+    private PacketReceiver packetReceiver;
+    private final PacketJsonHandler packetJsonHandler;
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final ReportHandler reportHandler = new ReportHandler();
+    private final ReportHandler reportHandler;
 
     private final String userId;
     private final int actorIndex;
+    
+    private Config config;
 
-    public NettyCommunication(String userId, int actorIndex) {
+    public NettyCommunication(String userId, int actorIndex, Config config) {
+        this.config = config;
         this.userId = userId;
         this.actorIndex = actorIndex;
 
-        nettyClient = new NettyClient();
+        nettyClient = new NettyClient(config);
         packetReceiver = new PacketReceiver(userId);
-
+        packetJsonHandler = new PacketJsonHandler(config);
+        reportHandler  = new ReportHandler(config);
         nettyClient.setPacketListener(packetReceiver);
 
 
-        if (Config.obj().getDisplay().isDisplayTransferredPacket()) {
+        if (config.getDisplay().isDisplayTransferredPacket()) {
             logger.info("Connect to server");
         }
+    }
+
+    private void loadConfig() {
+        this.config = Config.builder().create();
     }
 
     @Override
@@ -63,7 +71,7 @@ public class NettyCommunication implements IBaseCommunication {
     @Override
     public void execute(ScenarioUnit scenarioUnit) throws SuspendExecution {
         if (scenarioUnit.type.equals(ScenarioUnitType.Disconnect)) {
-            nettyClient.close();
+            nettyClient.disconnect();
             return;
         }
 
@@ -121,7 +129,7 @@ public class NettyCommunication implements IBaseCommunication {
             return Boolean.FALSE;
 
         try {
-            if (Config.obj().getDisplay().isDisplayUnitTestResult()) {
+            if (config.getDisplay().isDisplayUnitTestResult()) {
                 compareResult = packetJsonHandler.matchPacket(userId, scenarioUnit.json, responsePck);
             } else {
                 //To display statistics information, set to true
@@ -158,7 +166,7 @@ public class NettyCommunication implements IBaseCommunication {
 
         try {
             realResponsePacket = packetReceiver.readPacket();
-            if (Config.obj().getDisplay().isDisplayTransferredPacket()) {
+            if (config.getDisplay().isDisplayTransferredPacket()) {
                 logger.info("realResponsePacket : {}", realResponsePacket.getKey());
             }
         } catch (Exception e) {
@@ -199,7 +207,7 @@ public class NettyCommunication implements IBaseCommunication {
             }
 
             if (!receivedPacketName.equals(expectedPacketName)) {
-                if (Config.obj().getCommon().isIgnoreUnnecessaryPacket()) {
+                if (config.getCommon().isIgnoreUnnecessaryPacket()) {
                     logger.debug("[userId:{}]ignore received packet: {}", userInfo.get(), receivedPacketName);
                     objReceivePacket = receivePacket(clsPck);
                 } else {

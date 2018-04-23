@@ -1,7 +1,9 @@
 package com.nhnent.eat;
 
 import com.nhnent.eat.common.Config.Config;
+import com.nhnent.eat.communication.jmx.JMXClient;
 import com.nhnent.eat.entity.ScenarioUnit;
+import com.nhnent.eat.handler.ScenarioContext;
 import com.nhnent.eat.handler.ScenarioExecutor;
 import com.nhnent.eat.handler.ScenarioLoader;
 import org.junit.Test;
@@ -14,12 +16,14 @@ import java.util.List;
 public class ScenarioExecutorTest {
     @Test
     public void execute() throws Exception {
-        ScenarioExecutor scenExec = new ScenarioExecutor("test");
+        Config config = Config.builder().create();
+        ScenarioContext scenarioContext = ScenarioContext.builder().userId("test").jmxClient(new JMXClient(config)).build();
+        ScenarioExecutor scenExec = new ScenarioExecutor(scenarioContext);
 
         List<ScenarioUnit> listScenPck;
 
-        ScenarioLoader scenLoader = new ScenarioLoader();
-        String scenPath = Config.obj().getScenario().getScenarioPath();
+        ScenarioLoader scenLoader = new ScenarioLoader(config);
+        String scenPath = config.getScenario().getScenarioPath();
         String scenFile = scenPath + "\\chat_test.scn";
         System.out.println(scenPath);
         listScenPck = scenLoader.loadScenario(scenFile, "");

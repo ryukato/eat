@@ -53,6 +53,8 @@ public class CommonJMXClient {
 
     ObjectName beanName;
 
+    private Config config;
+
     public void close() throws IOException {
         if (jmxConnector != null) {
             jmxConnector.close();
@@ -61,26 +63,34 @@ public class CommonJMXClient {
     }
 
     private CommonJMXClient() {
+        loadConfig();
         classMap = new HashMap<>();
 
         if (jmxConnector == null) {
             try {
 
-                JMXConfig conf = Config.obj().getJmxConfig();
+                JMXConfig conf = config.getJmxConfig();
 
                 loadClass(conf.getmBeanFilePath());
 
                 JMXServiceURL url =
-                        new JMXServiceURL("service:jmx:rmi:///jndi/rmi://" + Config.obj().getJmxConfig().getIpAddress() + ":" +
-                                Config.obj().getJmxConfig().getPort() + "/jmxrmi");
+                        new JMXServiceURL(
+                            String.format("service:jmx:rmi:///jndi/rmi://%s:%s/jmxrmi",
+                                config.getJmxConfig().getIpAddress(),
+                                config.getJmxConfig().getPort())
+                            );
                 jmxConnector = JMXConnectorFactory.connect(url);
 
-                createProxy(Config.obj().getJmxConfig().getMBeanName(), Config.obj().getJmxConfig().getEndPointName());
+                createProxy(config.getJmxConfig().getMBeanName(), config.getJmxConfig().getEndPointName());
 
             } catch (Exception e) {
                 System.out.println(e.toString());
             }
         }
+    }
+
+    private void loadConfig() {
+        this.config = Config.builder().create();
     }
 
     private boolean createProxy(String mBeanName, String endPointName) {

@@ -14,13 +14,13 @@ public class SslHandler {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    public static SslContext initSSL() {
+    public static SslContext initSSL(Config config) {
         Logger logger = LoggerFactory.getLogger("com.nhnent.eat.communication.netty.ws.SslHandler");
 
         SslContext sslContext =
-                getSslContext(Config.obj().getServer().getSsl().getKeyCertChainPath(),
-                              Config.obj().getServer().getSsl().getPrivateKeyPath(),
-                              Config.obj().getServer().getSsl().getKeyPassword()
+                getSslContext(config.getServer().getSsl().getKeyCertChainPath(),
+                              config.getServer().getSsl().getPrivateKeyPath(),
+                              config.getServer().getSsl().getKeyPassword()
                 );
 
         if(sslContext !=null){

@@ -44,11 +44,18 @@ public class PacketReceiver implements PacketListener {
     private final Object monitor = new Object();
     private Strand receiveStrand = null;
     private final String userId;
+    private Config config;
 
     public PacketReceiver(String userId) {
+        loadConfig();
         this.userId = userId;
         receiveStrand = Strand.currentStrand();
     }
+
+    private void loadConfig() {
+        this.config = Config.builder().create();
+    }
+
 
     @Override
     public void receivePacket(byte[] readBuf) {
@@ -83,7 +90,7 @@ public class PacketReceiver implements PacketListener {
             //Sometimes, it happens, even within Timeout period, packetQueue is empty.
             //So, let's check timeout period.
             long elapsedTime = (now.getTime() - lastPacketReceivedTime.getTime()) / 1000 % 60;
-            long configTimeout = Config.obj().getCommon().getReceiveTimeoutSec();
+            long configTimeout = config.getCommon().getReceiveTimeoutSec();
             if( elapsedTime >= configTimeout ) {
                 throw new TimeoutException();
             } else {

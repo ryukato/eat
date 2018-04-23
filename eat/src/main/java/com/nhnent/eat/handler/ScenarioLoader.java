@@ -40,8 +40,12 @@ import static com.nhnent.eat.common.Util.extractGlobalVariable;
 public class ScenarioLoader {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-
     private ScenarioUnitParser scenarioUnitParser = new ScenarioUnitParser();
+
+    private Config config;
+    public ScenarioLoader(Config config) {
+        this.config = config;
+    }
 
     /**
      * Pre-compile the given scenario file.
@@ -56,7 +60,7 @@ public class ScenarioLoader {
      */
     private String preCompile(final String scenarioFileName, final String userId) {
 
-        List<String> packageNames = Config.obj().getPacket().getPackageKeys();
+        List<String> packageNames = config.getPacket().getPackageKeys();
         List<String> packageNameDelimiters = new LinkedList<>();
         for (String packageName : packageNames) {
             packageNameDelimiters.add("[" + packageName + "]");
@@ -120,7 +124,7 @@ public class ScenarioLoader {
                 //So at first remove '[' and ']', and then extract Package Name.
                 for (String packages : packageNameDelimiters) {
                     String packageType = packages.replace("[", "").replace("]", "");
-                    String packetPackageName = "[" + Config.obj().getPacket().getPackage(packageType) + "]";
+                    String packetPackageName = "[" + config.getPacket().getPackage(packageType) + "]";
                     s = s.replace(packages, packetPackageName);
                 }
 
@@ -219,7 +223,7 @@ public class ScenarioLoader {
 
                     // If the syllable starts with "include", recursive the loadScenario function.
                     if (header.startsWith(IncludeDelimiter)) {
-                        String scenarioPath = Config.obj().getScenario().getScenarioPath();
+                        String scenarioPath = config.getScenario().getScenarioPath();
                         String includeFileName = scenarioPath + "/" + header.replace(" ", "")
                                 .replace(IncludeDelimiter + "=", "");
                         listScenarioUnit.addAll(loadScenario(includeFileName, userId));

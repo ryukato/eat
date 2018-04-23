@@ -39,6 +39,11 @@ public abstract class BaseCustomAPI {
     protected Instant requestTime = Instant.now();
     protected Instant responseTime = Instant.now();
 
+    private Config config;
+    public BaseCustomAPI(Config config) {
+        this.config = config;
+    }
+
     public void initialize(final PacketClassPool packetClassPool, final List<IBaseCommunication> communicationList, final HashMap<String, String> runtimeVar,
                            final String userId) throws SuspendExecution {
 
@@ -79,8 +84,8 @@ public abstract class BaseCustomAPI {
         scenarioResult.succeedCount++;
         requestTime = Instant.now();
 
-        if (Config.obj().getDisplay().isDisplayTransferredPacket()) {
-            if (Config.obj().getDisplay().isDisplayTransferredPacketJson()) {
+        if (config.getDisplay().isDisplayTransferredPacket()) {
+            if (config.getDisplay().isDisplayTransferredPacketJson()) {
                 logger.info("[userId:{}][Received packet][{}] \n{}",
                         userInfo.get(),
                         recvPacket.getKey(),
@@ -131,8 +136,8 @@ public abstract class BaseCustomAPI {
             logger.error(ExceptionUtils.getStackTrace(e));
         }
 
-        if (Config.obj().getDisplay().isDisplayTransferredPacket()) {
-            if (Config.obj().getDisplay().isDisplayTransferredPacketJson()) {
+        if (config.getDisplay().isDisplayTransferredPacket()) {
+            if (config.getDisplay().isDisplayTransferredPacketJson()) {
 
                 byte[] bodyPacket = StreamPacket.obj().getBodyPacket(userId, sendPacket);
 

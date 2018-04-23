@@ -98,4 +98,16 @@ public class Common {
         this.receiveTimeoutSec = receiveTimeoutSec;
     }
 
+
+    @Override
+    public String toString() {
+        return "Common{" +
+            "\n rootDirectory='" + rootDirectory + '\'' +
+            "\n extraLibraryPath='" + extraLibraryPath + '\'' +
+            "\n ignoreUnnecessaryPacket=" + ignoreUnnecessaryPacket +
+            "\n countOfRealThread=" + countOfRealThread +
+            "\n loggingOnSameFile=" + loggingOnSameFile +
+            "\n receiveTimeoutSec=" + receiveTimeoutSec +
+            '}';
+    }
 }

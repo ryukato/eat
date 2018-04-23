@@ -2,6 +2,7 @@ package com.nhnent.eat.common.Config;
 
 import com.google.gson.annotations.Expose;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -85,5 +86,17 @@ public class Packet {
 
     public void setClassPackage(String classPackage) {
         this.classPackage = classPackage;
+    }
+
+    @Override
+    public String toString() {
+        return "Packet{" +
+            "pluginPackage='" + pluginPackage + '\'' +
+            ", classPackage='" + classPackage + '\'' +
+            ", pluginClass='" + pluginClass + '\'' +
+            ", bytePacketTypes=" + Arrays.toString(bytePacketTypes) +
+            ", packetPackages=" + Arrays.toString(packetPackages) +
+            ", packages=" + packages +
+            '}';
     }
 }

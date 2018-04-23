@@ -53,13 +53,10 @@ public class ScenarioExecutor {
      * Common Interfaces for communication
      */
     List<IBaseCommunication> listCommunication = new LinkedList<>();
-
-    public ScenarioExecutor(String userId) {
-        this.userId = userId;
-    }
-
-    public void addCommunication(IBaseCommunication communication) {
-        listCommunication.add(communication);
+    private final ScenarioContext context;
+    public ScenarioExecutor(ScenarioContext context) {
+        this.context = context;
+        this.userId = context.getUserId();
     }
 
     /**
@@ -82,7 +79,7 @@ public class ScenarioExecutor {
     private ScenarioExecutionResult execute(final List<ScenarioUnit> listScenario)
             throws SuspendExecution {
 
-        ReportHandler reportHandler = new ReportHandler();
+        ReportHandler reportHandler = new ReportHandler(context.getConfig());
         int succeedCount = 0;
         int failureCount = 0;
         List<Integer> previousLoopStartIdx = new ArrayList<>();
@@ -95,8 +92,8 @@ public class ScenarioExecutor {
 
         String originalJson;
 
-        if (Config.obj().getCustomScenarioAPI().isUse()) {
-            ApiLoader.obj().initialize(PacketClassPool.obj(), listCommunication, runtimeVar, userId);
+        if (context.getConfig().getCustomScenarioAPI().isUse()) {
+            ApiLoader.obj().initialize(PacketClassPool.obj(), this.context.getListCommunication(), runtimeVar, userId);
         }
         try {
             for (int scenarioIdx = 0; scenarioIdx < listScenario.size(); scenarioIdx++) {
@@ -111,7 +108,7 @@ public class ScenarioExecutor {
 
                 // TODO: JMX call Old version.. have to delete
                 if (scenario.type.equals(ScenarioUnitType.SetCardDeck)) {
-                    JMXClient.obj().setCardDeck(scenario.json);
+                    context.getJmxClient().setCardDeck(scenario.json);
                     logger.info("-------------------------");
                     logger.info("|      Set Card Deck    |");
                     logger.info("-------------------------");
@@ -120,7 +117,7 @@ public class ScenarioExecutor {
                 }
                 // TODO: JMX call Old version.. have to delete
                 if (scenario.type.equals(ScenarioUnitType.SetQaCommand)) {
-                    JMXClient.obj().setQaCommand(scenario.json);
+                    context.getJmxClient().setQaCommand(scenario.json);
                     logger.info("-------------------------");
                     logger.info("|      Set QA Command    |");
                     logger.info("-------------------------");

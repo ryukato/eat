@@ -98,4 +98,16 @@ public class Display {
     public void setDisplayTransferredPacketJson(boolean displayTransferredPacketJson) {
         this.displayTransferredPacketJson = displayTransferredPacketJson;
     }
+
+    @Override
+    public String toString() {
+        return "Display{" +
+            "displayTransferredPacket=" + displayTransferredPacket +
+            ", displayTransferredPacketJson=" + displayTransferredPacketJson +
+            ", displayUnitTestResult=" + displayUnitTestResult +
+            ", displayFinalTestResult=" + displayFinalTestResult +
+            ", displayStatisticResult=" + displayStatisticResult +
+            ", displayFinalStatisticResult=" + displayFinalStatisticResult +
+            '}';
+    }
 }

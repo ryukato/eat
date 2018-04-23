@@ -1,6 +1,7 @@
 package com.nhnent.eat.common.Config;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +11,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -17,41 +19,57 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * The instance of this class is immutable but not singleton.
+ * So be careful not creating many instances containing same configuration.
+ */
 public class Config {
-    private Common common = new Common();
-    private Display display = new Display();
-    private Server server = new Server();
-    private Packet packet = new Packet();
-    private Scenario scenario = new Scenario();
-    private CustomScenarioAPI customScenarioAPI = new CustomScenarioAPI();
-    private QaService qaService = new QaService();
-    private JMXConfig jmxConfig = new JMXConfig();
+    private Common common;
+    private Display display;
+    private Server server;
+    private Packet packet;
+    private Scenario scenario;
+    private CustomScenarioAPI customScenarioAPI;
+    private QaService qaService;
+    private JMXConfig jmxConfig;
 
-
-    private static Config instance = null;
-
-    private static String configFilePath;
-
-    public static void setConfigRootPath(String configRootPath) {
-        configFilePath = configRootPath;
+    public static Builder builder() {
+        return new Builder();
     }
-    /**
-     * Get singleton instance
-     *
-     * @return singleton instance
-     */
 
-    public static Config obj() {
-        final Logger logger = LoggerFactory.getLogger("EAT.Config");
-        if (instance == null) {
+    public static class Builder {
+        private String configFilePath;
+
+        public Builder from(String configFilePath) {
+            this.configFilePath = configFilePath;
+            return this;
+        }
+
+        public Config create() {
             try {
-                System.out.println(loadConfiguration(configFilePath));
-                instance = new Gson().fromJson(loadConfiguration(configFilePath), Config.class);
+                return new Gson().fromJson(loadConfiguration(configFilePath), Config.class);
             } catch (IOException e) {
-                logger.error(ExceptionUtils.getStackTrace(e));
+              throw new RuntimeException("Fail to create Config instance with path: " + this.configFilePath + "\ncause: " + e.getMessage());
             }
         }
-        return instance;
+
+        public Config create(String configFilePath) {
+            this.from(configFilePath);
+            return this.create();
+        }
+
+        public <T extends Config> T create(Class<T> configClass, T t) {
+            if (t == null) {
+                try {
+                    String configJson = loadConfiguration(configFilePath);
+                    return new Gson().fromJson(configJson, configClass);
+                } catch (IOException e) {
+                    throw new RuntimeException("Fail to create Config instance with path: " + this.configFilePath + "\ncause: " + e.getMessage());
+                }
+            }
+            return t;
+
+        }
     }
 
     public static String loadConfiguration(String configResourcePath) throws IOException {
@@ -70,58 +88,26 @@ public class Config {
     }
 
     private static Path findConfigResourcePath(String configResourcePath) {
-        final Logger logger = LoggerFactory.getLogger("EAT.Config");
-        Path configPath = Paths.get(configResourcePath);
+        return Optional.ofNullable(configResourcePath)
+            .filter(s -> s != null)
+            .map(s -> Paths.get(configResourcePath))
+            .filter(path -> Files.exists(path) && Files.isReadable(path))
+            .orElse(getDefaultResourcePath());
 
-        if (Files.exists(configPath) && Files.isReadable(configPath)) {
-            return configPath;
-        } else {
-            logger.warn("Config file not exist or not readable => {}, so try to find config resource under classpath", configFilePath);
-            try {
-                return Paths.get(Config.class.getClassLoader().getResource("config.json").toURI());
-            } catch (URISyntaxException e) {
-                return null;
-            }
-        }
     }
 
-    public static <T> T obj(Class<T> configClass, Object instancePara) {
-        final Logger logger = LoggerFactory.getLogger("EAT.Config");
-        if (instancePara == null) {
-
-            Gson gson = new Gson();
-            InputStream inputStream = null;
-            if (configFilePath != null) {
-                try {
-                    logger.info("configRootPath => ", configFilePath);
-                    inputStream = new FileInputStream(configFilePath);
-                } catch (FileNotFoundException e) {
-                    logger.error(ExceptionUtils.getStackTrace(e));
-                }
-            } else {
-                inputStream = Config.class.getClassLoader().getResourceAsStream("config.json");
-            }
-
-            StringBuffer sb = new StringBuffer();
-            byte[] b = new byte[4096];
-            try {
-                for (int n; (n = inputStream.read(b)) != -1; ) {
-                    sb.append(new String(b, 0, n));
-                }
-            } catch (IOException e) {
-                logger.error(ExceptionUtils.getStackTrace(e));
-            }
-            String configJson = sb.toString();
-            instancePara = gson.fromJson(configJson, configClass);
+    private static Path getDefaultResourcePath() {
+        try {
+            return Paths.get(Config.class.getClassLoader().getResource("config.json").toURI());
+        } catch (URISyntaxException e) {
+            return null;
         }
-        instance = (Config)instancePara;
-        return (T) instance;
     }
 
     /**
-     * Default Constructor
+     * Default Constructor, but create instance with Builder
      */
-    public Config() {
+    protected Config() {
 
     }
 
@@ -135,30 +121,12 @@ public class Config {
     }
 
     /**
-     * Set Common group config item.
-     *
-     * @param common Common group config item
-     */
-    public void setCommon(Common common) {
-        this.common = common;
-    }
-
-    /**
      * Get Display Group config item.
      *
      * @return Display Group config item
      */
     public Display getDisplay() {
         return display;
-    }
-
-    /**
-     * Set Display Group config item
-     *
-     * @param display Display Group config item
-     */
-    public void setDisplay(Display display) {
-        this.display = display;
     }
 
     /**
@@ -171,15 +139,6 @@ public class Config {
     }
 
     /**
-     * Set Server group config item
-     *
-     * @param server Server group config item
-     */
-    public void setServer(Server server) {
-        this.server = server;
-    }
-
-    /**
      * Get Scenario group config item
      *
      * @return Scenario group config item
@@ -188,45 +147,37 @@ public class Config {
         return scenario;
     }
 
-    /**
-     * Set Scenario group config item
-     *
-     * @param scenario Scenario group config item
-     */
-    public void setScenario(Scenario scenario) {
-        this.scenario = scenario;
-    }
-
     public CustomScenarioAPI getCustomScenarioAPI() {
         return customScenarioAPI;
-    }
-
-    public void setCustomScenarioAPI(CustomScenarioAPI customScenarioAPI) {
-        this.customScenarioAPI = customScenarioAPI;
     }
 
     public QaService getQaService() {
         return qaService;
     }
 
-    public void setQaService(QaService qaService) {
-        this.qaService = qaService;
-    }
-
-
     public JMXConfig getJmxConfig() {
         return jmxConfig;
-    }
-
-    public void setJmxConfig(JMXConfig config) {
-        this.jmxConfig = config;
     }
 
     public Packet getPacket() {
         return packet;
     }
 
-    public void setPacket(Packet packet) {
-        this.packet = packet;
+    @Override
+    public String toString() {
+        return "Config{" +
+            "common=" + common +
+            ", display=" + display +
+            ", server=" + server +
+            ", packet=" + packet +
+            ", scenario=" + scenario +
+            ", customScenarioAPI=" + customScenarioAPI +
+            ", qaService=" + qaService +
+            ", jmxConfig=" + jmxConfig +
+            '}';
+    }
+
+    public String toJsonString() {
+        return new GsonBuilder().setPrettyPrinting().create().toJson(this);
     }
 }

@@ -50,14 +50,16 @@ public final class Main {
     public static void main(final String[] args) throws ExecutionException, InterruptedException {
 
         final Logger logger = LoggerFactory.getLogger("EAT Main");
-
+        Config config = null;
         //Call to initialize
         if(args.length != 0) {
-            Config.setConfigRootPath(args[0]);
+            config = Config.builder().from(args[0]).create();
+        } else {
+            config = Config.builder().create();
         }
 
         String logfileName;
-        if(Config.obj().getCommon().isLoggingOnSameFile()) {
+        if(config.getCommon().isLoggingOnSameFile()) {
             logfileName = "Initialize";
         } else {
             Date now = new Date();
@@ -69,27 +71,31 @@ public final class Main {
 
         MDC.put("logfileName", logfileName);
 
-        StreamPacket.obj().loadClass(Config.obj().getPacket().getPluginPackage(),
-                Config.obj().getPacket().getPluginClass());
+        StreamPacket.obj().loadClass(
+            config.getPacket().getPluginPackage(),
+            config.getPacket().getPluginClass()
+        );
         StreamPacket.obj().initSingletonInstance();
 
         try {
 
-            for(PacketPackage packetPackage : Config.obj().getPacket().getPacketPackages())
+            for(PacketPackage packetPackage : config.getPacket().getPacketPackages())
             {
-                PacketClassPool.obj().loadClassInfoFromJarFile(packetPackage.getPackageName(),
-                        Paths.get(Config.obj().getPacket().getClassPackage()).toString());
+                PacketClassPool.obj().loadClassInfoFromJarFile(
+                    packetPackage.getPackageName(),
+                    Paths.get(config.getPacket().getClassPackage()).toString()
+                );
             }
 
 
             //Load custom API
-            if(Config.obj().getCustomScenarioAPI().isUse()) {
-                String customApiJarFilePath = Config.obj().getCustomScenarioAPI().getJarFile();
+            if(config.getCustomScenarioAPI().isUse()) {
+                String customApiJarFilePath = config.getCustomScenarioAPI().getJarFile();
                 ApiLoader.obj().loadClass(customApiJarFilePath,
-                        Config.obj().getCustomScenarioAPI().getApiClassName());
+                    config.getCustomScenarioAPI().getApiClassName());
             }
 
-            ManagerActor manager = Actor.newActor(ManagerActor.class);
+            ManagerActor manager = Actor.newActor(ManagerActor.class, config);
             logger.info("Spawn manager actor.");
             manager.spawn();
             manager.join();

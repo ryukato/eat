@@ -10,11 +10,12 @@ import org.junit.Test;
 public class ScenarioLoaderTest {
     @Test
     public void load() throws Exception {
-            ScenarioLoader scenLoader = new ScenarioLoader();
-            String scenPath = Config.obj().getScenario().getScenarioPath();
-            String scenFile = scenPath + "\\chat_test.scn";
-            System.out.println(scenPath);
-            scenLoader.loadScenario(scenFile, "");
+      Config config = Config.builder().create();
+      ScenarioLoader scenLoader = new ScenarioLoader(config);
+      String scenPath = config.getScenario().getScenarioPath();
+      String scenFile = scenPath + "\\chat_test.scn";
+      System.out.println(scenPath);
+      scenLoader.loadScenario(scenFile, "");
     }
 
 

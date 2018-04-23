@@ -37,6 +37,10 @@ import static java.lang.Boolean.TRUE;
  * Report Handler will write log for unit result and final result
  */
 public class ReportHandler {
+    private Config config;
+    public ReportHandler(Config config) {
+        this.config = config;
+    }
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -52,7 +56,7 @@ public class ReportHandler {
                                             final Boolean result)
             throws Exception {
 
-        if (Config.obj().getDisplay().isDisplayUnitTestResult()) {
+        if (config.getDisplay().isDisplayUnitTestResult()) {
 
             GeneratedPacketJson packetJson = StreamPacket.obj().packetToJson(id, expect, real);
             String expectJson = packetJson.expectJson;
@@ -78,7 +82,7 @@ public class ReportHandler {
      */
     public final void writeLogForFinalResult(final int cntOfSucceed, final int cntOfFailure) {
 
-        if (!Config.obj().getDisplay().isDisplayFinalTestResult()) {
+        if (!config.getDisplay().isDisplayFinalTestResult()) {
             return;
         }
 
@@ -96,7 +100,7 @@ public class ReportHandler {
     }
 
     public final void writeFinalStatisticsResult(ScenarioExecutionResult[] results) {
-        if (!Config.obj().getDisplay().isDisplayFinalStatisticResult()) {
+        if (!config.getDisplay().isDisplayFinalStatisticResult()) {
             return;
         }
         NumberFormat formatter = new DecimalFormat("#0.00");
@@ -135,8 +139,8 @@ public class ReportHandler {
      * @param listResponseTime list of response time
      */
     public final StatisticsResult writeLogForStatisticsResult(List<Duration> listResponseTime) {
-        if (!Config.obj().getDisplay().isDisplayStatisticResult()
-                && !Config.obj().getDisplay().isDisplayFinalStatisticResult()) {
+        if (!config.getDisplay().isDisplayStatisticResult()
+                && !config.getDisplay().isDisplayFinalStatisticResult()) {
             return null;
         }
 
@@ -167,7 +171,7 @@ public class ReportHandler {
         }
         Double standardDeviation = Math.sqrt(diffSum / (listResponseTime.size()));
 
-        if(Config.obj().getDisplay().isDisplayStatisticResult()) {
+        if(config.getDisplay().isDisplayStatisticResult()) {
             logger.info("\n<-------Statistics(of response time)" + "[userId:" + userInfo.get() + "]" + " result------->");
             logger.info("(Mean) response time(ms) : " + formatter.format(mean));
             logger.info("(Standard Deviation) response time(ms) : " + formatter.format(standardDeviation));
@@ -196,7 +200,7 @@ public class ReportHandler {
     public final void displayTransferredPacket(final String type,
                                                final String name,
                                                final String json) {
-        if (Config.obj().getDisplay().isDisplayTransferredPacket()) {
+        if (config.getDisplay().isDisplayTransferredPacket()) {
             StringBuilder sb = new StringBuilder();
             sb.append("[userId:").append(userInfo.get()).append("]");
             switch (type) {
@@ -211,7 +215,7 @@ public class ReportHandler {
                     return;
             }
             sb.append("[").append(name).append("]");
-            if (Config.obj().getDisplay().isDisplayTransferredPacketJson()) {
+            if (config.getDisplay().isDisplayTransferredPacketJson()) {
                 sb.append("\n").append(json);
             }
             logger.info(sb.toString());
@@ -230,7 +234,7 @@ public class ReportHandler {
                                             final String expectedPacketJson,
                                             final String name,
                                             final Object packet) throws Exception {
-        if (Config.obj().getDisplay().isDisplayTransferredPacket()) {
+        if (config.getDisplay().isDisplayTransferredPacket()) {
             StringBuilder sb = new StringBuilder();
             sb.append("[userId:").append(userInfo.get()).append("]");
             switch (type) {
@@ -246,7 +250,7 @@ public class ReportHandler {
             }
             sb.append("[").append(name).append("]");
 
-            if (Config.obj().getDisplay().isDisplayTransferredPacketJson()) {
+            if (config.getDisplay().isDisplayTransferredPacketJson()) {
                 String packetJson = StreamPacket.obj()
                         .packetToJson(userInfo.get(), expectedPacketJson, packet).realJson;
 

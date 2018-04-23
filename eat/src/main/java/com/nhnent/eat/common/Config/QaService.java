@@ -31,4 +31,13 @@ public class QaService {
     public void setPort(int port) {
         this.port = port;
     }
+
+    @Override
+    public String toString() {
+        return "QaService{" +
+            "endPointName='" + endPointName + '\'' +
+            ", ipAddress='" + ipAddress + '\'' +
+            ", port=" + port +
+            '}';
+    }
 }

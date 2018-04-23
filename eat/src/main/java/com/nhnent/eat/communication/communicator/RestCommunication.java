@@ -21,8 +21,10 @@ public class RestCommunication implements IBaseCommunication {
     private RESTClient restClient = null;
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
+    private Config config;
 
-    public RestCommunication() {
+    public RestCommunication(Config config) {
+        this.config = config;
         restResponseStack = new Stack<>();
         restClient = new RESTClient();
     }
@@ -52,7 +54,7 @@ public class RestCommunication implements IBaseCommunication {
 
         Boolean isSucceed = ComparePacket.ComparePacket(scenarioUnit.json, realResultJson);
 
-        if (Config.obj().getDisplay().isDisplayUnitTestResult()) {
+        if (config.getDisplay().isDisplayUnitTestResult()) {
             logger.info("<-------Matching result(" + "RESTful Response" + ")------->");
 
             if (isSucceed) {

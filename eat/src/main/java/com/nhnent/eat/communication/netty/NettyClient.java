@@ -23,38 +23,50 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.net.URI;
 
 
 /**
  * Created by NHNEnt on 2017-03-28.
  */
-public class NettyClient {
+public class NettyClient implements Closeable {
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final String serverIp = Config.obj().getServer().getIp();
-    private int svrPort = Config.obj().getServer().getPort();
+    private final String serverIp;
+    private final int svrPort;
 
-    private static EventLoopGroup[] groups;
+    private EventLoopGroup[] groups;
 
     private Boolean isConnected = Boolean.FALSE;
 
     private StreamSocketPacketClientHandler streamSocketPacketClientHandler;
     private WebSocketClientHandler webSocketClientHandler;
 
-    public static void initEventLoopGroup() {
-        int cntOfRealThread = Config.obj().getCommon().getCountOfRealThread();
+    private Config config;
+
+    public NettyClient(Config config) {
+        this.config = config;
+        this.serverIp = this.config.getServer().getIp();
+        this.svrPort = config.getServer().getPort();
+    }
+
+    public void initEventLoopGroup() {
+        int cntOfRealThread = config.getCommon().getCountOfRealThread();
         groups = new EventLoopGroup[cntOfRealThread];
         for (int i = 0; i < cntOfRealThread; i++) {
             groups[i] = new NioEventLoopGroup();
         }
     }
 
+
+
     /**
      * Start up Netty client
      */
     public void startUp(int actorIndex) {
-        int cntOfRealThread = Config.obj().getCommon().getCountOfRealThread();
-        int cntOfPort = Config.obj().getServer().getCountOfPort();
+        int cntOfRealThread = config.getCommon().getCountOfRealThread();
+        int cntOfPort = config.getServer().getCountOfPort();
         int portNo = svrPort + (actorIndex % cntOfPort);
         int groupIndex = actorIndex % cntOfRealThread;
 
@@ -62,7 +74,7 @@ public class NettyClient {
 
         try {
 
-            int timeout = Config.obj().getCommon().getReceiveTimeoutSec();
+            int timeout = config.getCommon().getReceiveTimeoutSec();
 
             Bootstrap b = new Bootstrap();
             b.group(groups[groupIndex])
@@ -72,22 +84,22 @@ public class NettyClient {
                         @Override
                         public void initChannel(SocketChannel ch) throws Exception {
 
-                            if (Config.obj().getServer().getSsl() != null) {
-                                SslContext sslContext = SslHandler.initSSL();
+                            if (config.getServer().getSsl() != null) {
+                                SslContext sslContext = SslHandler.initSSL(config);
                                 if (sslContext != null) {
                                     logger.info("use ssl");
                                     ch.pipeline().addLast(sslContext.newHandler(ch.alloc()));
                                 }
                             }
 
-                            if (Config.obj().getServer().getSocketType().equals("STREAM")) {
+                            if (config.getServer().getSocketType().equals("STREAM")) {
 
                                 ch.pipeline().addLast("readTimeoutHandler",
                                         new ReadTimeoutWithNoClose(timeout));
                                 ch.pipeline().addLast("streamSocketPacketClientHandler",
                                         streamSocketPacketClientHandler);
 
-                            } else if (Config.obj().getServer().getSocketType().equals("WEBSOCKET")) {
+                            } else if (config.getServer().getSocketType().equals("WEBSOCKET")) {
 
                                 ch.pipeline().addLast("http-codec", new HttpClientCodec());
                                 ch.pipeline().addLast("aggregator", new HttpObjectAggregator(65536));
@@ -115,15 +127,15 @@ public class NettyClient {
      * @param packetListener PacketListener
      */
     public void setPacketListener(PacketListener packetListener) {
-        if (Config.obj().getServer().getSocketType().equals("STREAM")) {
+        if (config.getServer().getSocketType().equals("STREAM")) {
             streamSocketPacketClientHandler = new StreamSocketPacketClientHandler();
             streamSocketPacketClientHandler.setPacketListener(packetListener);
         } else {
 
             //If socket type is `WEBSOCKET`
-            final String uriString = String.format("ws://%s:%s/%s", Config.obj().getServer().getIp(),
-                    Config.obj().getServer().getPort(),
-                    Config.obj().getServer().getSubUriOfWS());
+            final String uriString = String.format("ws://%s:%s/%s", config.getServer().getIp(),
+                    config.getServer().getPort(),
+                    config.getServer().getSubUriOfWS());
             URI uri = URI.create(uriString);
 
             webSocketClientHandler =
@@ -150,7 +162,7 @@ public class NettyClient {
             startUp(actorIndex);
         }
 
-        if (Config.obj().getServer().getSocketType().equals("STREAM")) {
+        if (config.getServer().getSocketType().equals("STREAM")) {
             streamSocketPacketClientHandler.transferPacket(sendPck);
         } else {
             webSocketClientHandler.transferPacket(sendPck);
@@ -160,8 +172,8 @@ public class NettyClient {
     /**
      * close netty socket and destroy Netty Worker Group
      */
-    public void close() {
-        if (Config.obj().getServer().getSocketType().equals("STREAM")) {
+    public void disconnect() {
+        if (config.getServer().getSocketType().equals("STREAM")) {
             streamSocketPacketClientHandler.close();
         } else {
             webSocketClientHandler.close();
@@ -170,10 +182,17 @@ public class NettyClient {
         isConnected = Boolean.FALSE;
     }
 
-    public static void shutdownEventLoopGroup() {
-        int cntOfRealThread = Config.obj().getCommon().getCountOfRealThread();
+    @Override
+    public void close() {
+        shutdownEventLoopGroup();
+    }
+
+    public void shutdownEventLoopGroup() {
+        int cntOfRealThread = config.getCommon().getCountOfRealThread();
         for (int i = 0; i < cntOfRealThread; i++) {
-            groups[i].shutdownGracefully();
+            if (!groups[i].isShutdown()) {
+                groups[i].shutdownGracefully();
+            }
         }
     }
 

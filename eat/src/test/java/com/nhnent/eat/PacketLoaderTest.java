@@ -18,7 +18,7 @@ public class PacketLoaderTest {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
 
-        Config config = new Config();
+        Config config = Config.builder().create();
 
         config.getDisplay().setDisplayTransferredPacket(false);
         config.getDisplay().setDisplayUnitTestResult(false);

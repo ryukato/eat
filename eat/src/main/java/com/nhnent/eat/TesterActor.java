@@ -20,6 +20,7 @@ import co.paralleluniverse.actors.BasicActor;
 import co.paralleluniverse.fibers.SuspendExecution;
 import co.paralleluniverse.strands.Strand;
 import com.nhnent.eat.common.Config.Config;
+import com.nhnent.eat.common.Config.Scenario;
 import com.nhnent.eat.communication.communicator.JmxCommunication;
 import com.nhnent.eat.communication.communicator.NettyCommunication;
 import com.nhnent.eat.communication.communicator.RestCommunication;
@@ -27,6 +28,7 @@ import com.nhnent.eat.entity.MessageType;
 import com.nhnent.eat.entity.Messages;
 import com.nhnent.eat.entity.ScenarioExecutionResult;
 import com.nhnent.eat.entity.ScenarioUnit;
+import com.nhnent.eat.handler.ScenarioContext;
 import com.nhnent.eat.handler.ScenarioExecutor;
 import com.nhnent.eat.handler.ScenarioLoader;
 import com.nhnent.eat.packets.StreamPacket;
@@ -35,10 +37,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 import static com.nhnent.eat.Main.userInfo;
 
@@ -51,6 +50,11 @@ public final class TesterActor extends BasicActor<Messages, Void> {
     private int actorIndex = 0;
     private String userId;
     public static final InheritableThreadLocal<HashMap<String, String>> globalVariable = new InheritableThreadLocal<>();
+
+    private Config config;
+    public TesterActor(Config config) {
+        this.config = config;
+    }
 
     /**
      * doRun of Actor. It performs requests on Actor Mailbox.
@@ -78,7 +82,7 @@ public final class TesterActor extends BasicActor<Messages, Void> {
                     MDC.put("strand", Strand.currentStrand().getName());
 
                     String logfileName;
-                    if(Config.obj().getCommon().isLoggingOnSameFile()) {
+                    if(config.getCommon().isLoggingOnSameFile()) {
                         logfileName = String.format("%s", playerId);
                     } else {
                         Date now = new Date();
@@ -99,13 +103,19 @@ public final class TesterActor extends BasicActor<Messages, Void> {
 
                 //Handle execute of test start
                 if (m.type == MessageType.TestStart) {
-                    ScenarioExecutor scenarioExecutor = new ScenarioExecutor(userId);
+                    ScenarioContext context = ScenarioContext.builder()
+                        .config(config)
+                        .userId(userId)
+                        .listCommunication(Arrays.asList(
+                            new RestCommunication(config),
+                            new JmxCommunication(config),
+                            new NettyCommunication(userId, actorIndex, config)))
+                        .jmxClient(null)
+                        .build();
+
+                    ScenarioExecutor scenarioExecutor = new ScenarioExecutor(context);
 
                     StreamPacket.obj().initialize(userId);
-
-                    scenarioExecutor.addCommunication(new RestCommunication());
-                    scenarioExecutor.addCommunication(new JmxCommunication());
-                    scenarioExecutor.addCommunication(new NettyCommunication(userId, actorIndex));
 
                     ScenarioExecutionResult result = scenarioExecutor.runScenario(listScenarioPacket);
 
@@ -140,8 +150,8 @@ public final class TesterActor extends BasicActor<Messages, Void> {
      */
     private List<ScenarioUnit> loadScenario(final String scenarioFile, final String userId) throws SuspendExecution {
         this.userId = userId;
-        ScenarioLoader scenarioLoader = new ScenarioLoader();
-        String scenarioPath = Config.obj().getScenario().getScenarioPath();
+        ScenarioLoader scenarioLoader = new ScenarioLoader(config);
+        String scenarioPath = config.getScenario().getScenarioPath();
         String fullScenarioFilePath = scenarioPath + "/" + scenarioFile;
         return scenarioLoader.loadScenario(fullScenarioFilePath, userId);
     }

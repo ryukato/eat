@@ -1,5 +1,7 @@
 package com.nhnent.eat.common.Config;
 
+import java.util.Arrays;
+
 /**
  * Created by NHNEnt on 2016-11-04.
  */
@@ -102,5 +104,16 @@ public class Scenario {
      */
     public void setScenarioFile(String[] scenarioFile) {
         this.scenarioFile = scenarioFile;
+    }
+
+    @Override
+    public String toString() {
+        return "Scenario{" +
+            "scenarioPath='" + scenarioPath + '\'' +
+            ", playerCount=" + playerCount +
+            ", testActorStartGap=" + testActorStartGap +
+            ", userId=" + Arrays.toString(userId) +
+            ", scenarioFile=" + Arrays.toString(scenarioFile) +
+            '}';
     }
 }

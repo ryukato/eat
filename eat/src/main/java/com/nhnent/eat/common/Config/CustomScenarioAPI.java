@@ -32,4 +32,13 @@ public class CustomScenarioAPI {
     public void setUse(boolean use) {
         this.use = use;
     }
+
+    @Override
+    public String toString() {
+        return "CustomScenarioAPI{" +
+            "use=" + use +
+            ", jarFile='" + jarFile + '\'' +
+            ", apiClassName='" + apiClassName + '\'' +
+            '}';
+    }
 }

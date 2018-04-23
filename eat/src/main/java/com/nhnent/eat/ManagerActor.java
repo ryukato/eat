@@ -48,10 +48,14 @@ import static com.nhnent.eat.common.CommonDefine.EmptyString;
 
 
 class ActorExecutor implements Callable<Integer> {
+    private Config config;
+    public ActorExecutor(Config config) {
+        this.config = config;
+    }
 
     @Override
     public Integer call() throws Exception {
-        TesterActor tester = Actor.newActor(TesterActor.class);
+        TesterActor tester = Actor.newActor(TesterActor.class, config);
         tester.spawn();
         ManagerActor.actorList.add(tester.ref());
         return 0;
@@ -70,13 +74,18 @@ public final class ManagerActor extends BasicActor<Void, Void> {
 
     private String previousSnoString = EmptyString;
 
+    private Config config;
+    public ManagerActor(Config config) {
+        this.config = config;
+    }
+
     void spawnActor() throws InterruptedException, SuspendExecution {
 
-        int cntOfTest = Config.obj().getScenario().getPlayerCount();
-        int realThreadCount = Config.obj().getCommon().getCountOfRealThread();
+        int cntOfTest = config.getScenario().getPlayerCount();
+        int realThreadCount = config.getCommon().getCountOfRealThread();
         ExecutorService executor = Executors.newFixedThreadPool(realThreadCount);
 
-        ActorExecutor actorExecutor = new ActorExecutor();
+        ActorExecutor actorExecutor = new ActorExecutor(config);
 
         List<Future> futures = new ArrayList<>();
 
@@ -96,14 +105,14 @@ public final class ManagerActor extends BasicActor<Void, Void> {
      */
     @Override
     protected Void doRun() throws SuspendExecution {
-        try {
-            NettyClient.initEventLoopGroup();
+        try(NettyClient nettyClient = new NettyClient(config);) {
+            nettyClient.initEventLoopGroup();
 
             MDC.put("playerId", "Manager");
             MDC.put("strand", Strand.currentStrand().getName());
 
             //Read config, and Spawn TestActor according to config.
-            int cntOfTest = Config.obj().getScenario().getPlayerCount();
+            int cntOfTest = config.getScenario().getPlayerCount();
 
             spawnActor();
 
@@ -139,8 +148,8 @@ public final class ManagerActor extends BasicActor<Void, Void> {
 
                 tester.send(new Messages(this.ref, MessageType.TestStart));
                 logger.info("Request preparation to tester actor (" + tester.toString() + ")");
-                if (Config.obj().getScenario().getTestActorStartGap() != 0) {
-                    Strand.sleep(Config.obj().getScenario().getTestActorStartGap());
+                if (config.getScenario().getTestActorStartGap() != 0) {
+                    Strand.sleep(config.getScenario().getTestActorStartGap());
                 }
             }
 
@@ -163,7 +172,7 @@ public final class ManagerActor extends BasicActor<Void, Void> {
                 }
             }
 
-            JMXClient.obj().disconnect();
+//            JMXClient.obj().disconnect();
 
             Date testEndDateTime = new Date();
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -179,10 +188,10 @@ public final class ManagerActor extends BasicActor<Void, Void> {
             logger.info("Average Transferred packet for 1 sec: " +
                     String.format("%.2f", avgTransPacketCount));
 
-            ReportHandler reportHandler = new ReportHandler();
+            ReportHandler reportHandler = new ReportHandler(config);
             reportHandler.writeFinalStatisticsResult(results);
 
-            NettyClient.shutdownEventLoopGroup();
+            nettyClient.shutdownEventLoopGroup();
         } catch (final Exception e) {
             logger.error("Exception is raised", e);
         }
@@ -203,11 +212,11 @@ public final class ManagerActor extends BasicActor<Void, Void> {
     private Messages makeRequestTestPreparationMessage(final int idx) {
 
         String userId = EmptyString;
-        int playerCount = Config.obj().getScenario().getUserId().length;
+        int playerCount = config.getScenario().getUserId().length;
 
         if(idx < playerCount)
         {
-            userId = Config.obj().getScenario().getUserId()[idx];
+            userId = config.getScenario().getUserId()[idx];
             previousSnoString = userId;
         }
         else if(idx >= playerCount)
@@ -256,11 +265,11 @@ public final class ManagerActor extends BasicActor<Void, Void> {
 //        }
 
         String scenarioFile;
-        int scenarioFileCount = Config.obj().getScenario().getScenarioFile().length;
+        int scenarioFileCount = config.getScenario().getScenarioFile().length;
 
         int recursiveScenarioIdx = idx % scenarioFileCount;
 
-        scenarioFile = Config.obj().getScenario().getScenarioFile()[recursiveScenarioIdx];
+        scenarioFile = config.getScenario().getScenarioFile()[recursiveScenarioIdx];
 
         return new Messages(this.ref, MessageType.PrepareTest, userId, scenarioFile, idx);
     }

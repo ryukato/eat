@@ -20,13 +20,14 @@ import static com.nhnent.eat.common.JsonUtil.getValueOfVar;
 
 /**
  * JMX client to access QA Service of Game
+ * why singleton?
  */
 public class JMXClient {
+    
+    private Config config;
 
-    private static final JMXClient instance = new JMXClient();
-
-    public static JMXClient obj() {
-        return instance;
+    public JMXClient(Config config) {
+        this.config = config;
     }
 
     private JMXConnector jmxConnector = null;
@@ -50,13 +51,13 @@ public class JMXClient {
         }
 
         JMXServiceURL url =
-                new JMXServiceURL("service:jmx:rmi:///jndi/rmi://" + Config.obj().getQaService().getIpAddress() + ":" +
-                        Config.obj().getQaService().getPort() + "/jmxrmi");
+                new JMXServiceURL("service:jmx:rmi:///jndi/rmi://" + config.getQaService().getIpAddress() + ":" +
+                        config.getQaService().getPort() + "/jmxrmi");
 
         jmxConnector = JMXConnectorFactory.connect(url);
         MBeanServerConnection mbeanServerConnection = jmxConnector.getMBeanServerConnection();
         //ObjectName should be same as your MBean name
-        ObjectName mBeanName = new ObjectName(Config.obj().getQaService().getEndPointName());
+        ObjectName mBeanName = new ObjectName(config.getQaService().getEndPointName());
 
         //Get MBean proxy instance that will be used to make calls to registered MBean
         mBeanProxy =
@@ -74,7 +75,7 @@ public class JMXClient {
      */
     public void setCardDeck(String json) throws InterruptedException, SuspendExecution, ExecutionException,
             IOException, MalformedObjectNameException {
-        JMXClient.obj().connect();
+        connect();
         mBeanProxy.sendLobbyCommand("SetCardDeck", json);
     }
 
@@ -101,7 +102,7 @@ public class JMXClient {
             data = EmptyString;
         }
 
-        JMXClient.obj().connect();
+        connect();
         mBeanProxy.sendLobbyCommand(command, data);
     }
 

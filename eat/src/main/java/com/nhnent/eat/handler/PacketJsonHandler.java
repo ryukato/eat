@@ -27,6 +27,10 @@ import org.slf4j.LoggerFactory;
  * This class handle Json of Packet
  */
 public class PacketJsonHandler {
+    private Config config;
+    public PacketJsonHandler(Config config) {
+        this.config = config;
+    }
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -55,7 +59,7 @@ public class PacketJsonHandler {
      * @param s Original string
      * @return String which is removed Redundant char
      */
-    public static String removeRedundant(final String s) {
+    public String removeRedundant(final String s) {
         String rtn = s;
 
         rtn = rtn.replace("\r", "");
@@ -65,7 +69,7 @@ public class PacketJsonHandler {
         rtn = rtn.replace(",}", "}");
 
         String includedBytePacketName = null;
-        for(String bytePacketName : Config.obj().getPacket().getBytePacketTypes()) {
+        for(String bytePacketName : config.getPacket().getBytePacketTypes()) {
             if(s.contains(bytePacketName)) {
                 includedBytePacketName = bytePacketName;
                 break;
